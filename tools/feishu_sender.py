@@ -4,15 +4,12 @@
 飞书私聊文本发送（open_id）。
 
 独立可复用模块：不依赖项目内其它业务模块（仅依赖 requests）。
-鉴权仅通过：
-  - 参数：app_id / app_secret
-  - 或环境变量：FEISHU_APP_ID / FEISHU_APP_SECRET
+鉴权仅通过参数：app_id / app_secret（不读环境变量）。
 """
 
 from __future__ import annotations
 
 import json
-import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -26,10 +23,10 @@ class FeishuCredential:
 
 
 def load_credential(app_id: str | None = None, app_secret: str | None = None) -> FeishuCredential:
-    a = (app_id or os.environ.get("FEISHU_APP_ID") or "").strip()
-    s = (app_secret or os.environ.get("FEISHU_APP_SECRET") or "").strip()
+    a = (app_id or "").strip()
+    s = (app_secret or "").strip()
     if not a or not s:
-        raise RuntimeError("缺少飞书凭据：请设置 FEISHU_APP_ID / FEISHU_APP_SECRET，或通过参数传入。")
+        raise RuntimeError("缺少飞书凭据：请通过参数传入 app_id / app_secret。")
     return FeishuCredential(app_id=a, app_secret=s)
 
 

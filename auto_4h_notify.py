@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import time
@@ -331,9 +330,6 @@ def main() -> int:
         default=str(Path(__file__).resolve().parent / "config" / "analysis_defaults.yaml"),
         help="默认配置 YAML（用于读取飞书凭据/open_id/阈值）",
     )
-    ap.add_argument("--open-id", default="", help="飞书接收人 open_id（可从 YAML/环境变量读取）")
-    ap.add_argument("--app-id", default="", help="飞书 app_id（优先参数，其次环境变量，其次 YAML）")
-    ap.add_argument("--app-secret", default="", help="飞书 app_secret（优先参数，其次环境变量，其次 YAML）")
     ap.add_argument("--min-score", type=int, default=0, help="强信号最小 score（0=用 YAML 默认）")
     ap.add_argument("--min-wf", type=int, default=0, help="强信号最小 walk-forward（0=用 YAML 默认）")
     ap.add_argument("--interval-hours", type=int, default=0, help="运行间隔小时数（0=用 YAML 默认）")
@@ -346,24 +342,14 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cfg = _load_yaml_config(Path(args.config).resolve())
-    # Feishu creds precedence: args > env > yaml
-    open_id = _pick_first_nonempty(
-        args.open_id,
-        os.environ.get("FEISHU_OPEN_ID", ""),
-        _cfg_str(cfg, "FEISHU_OPEN_ID", "feishu.open_id"),
-    )
-    app_id = _pick_first_nonempty(
-        args.app_id,
-        os.environ.get("FEISHU_APP_ID", ""),
-        _cfg_str(cfg, "FEISHU_APP_ID", "feishu.app_id"),
-    )
-    app_secret = _pick_first_nonempty(
-        args.app_secret,
-        os.environ.get("FEISHU_APP_SECRET", ""),
-        _cfg_str(cfg, "FEISHU_APP_SECRET", "feishu.app_secret"),
-    )
+    # Feishu creds: always from YAML (no env/cli overrides)
+    open_id = _cfg_str(cfg, "FEISHU_OPEN_ID", "feishu.open_id")
+    app_id = _cfg_str(cfg, "FEISHU_APP_ID", "feishu.app_id")
+    app_secret = _cfg_str(cfg, "FEISHU_APP_SECRET", "feishu.app_secret")
     if not open_id:
-        raise RuntimeError("缺少飞书 open_id：请传 --open-id，或设置 FEISHU_OPEN_ID，或写入 YAML feishu.open_id")
+        raise RuntimeError("缺少飞书 open_id：请在 YAML 中填写 FEISHU_OPEN_ID 或 feishu.open_id")
+    if not app_id or not app_secret:
+        raise RuntimeError("缺少飞书凭据：请在 YAML 中填写 FEISHU_APP_ID/FEISHU_APP_SECRET 或 feishu.app_id/feishu.app_secret")
 
     min_score = int(args.min_score) if int(args.min_score) > 0 else int(_cfg_get(cfg, "auto_notify.min_score", 70))
     min_wf = int(args.min_wf) if int(args.min_wf) > 0 else int(_cfg_get(cfg, "auto_notify.min_wf", 55))
