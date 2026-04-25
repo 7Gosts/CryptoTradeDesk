@@ -25,13 +25,13 @@ method_123_ruleset_id: ross_123_reversal_fractal_v1
 
 # 飞书推送（可选）
 
-FEISHU_APP_ID: "替换成你自己的key"
-FEISHU_APP_SECRET: "替换成你自己的key"
-FEISHU_OPEN_ID: "替换成你自己的key"
+FEISHU_APP_ID: "cli_a7defb0aacf8d00b"
+FEISHU_APP_SECRET: "A8ETDmoj7bpabcxYQD7C7bfq26ACJjD7"
+FEISHU_OPEN_ID: "ou_da40c916634649df3b447fd0c5a8d4e3"
 
 # 自动通知的“强信号”阈值（可选；供 auto_4h_notify.py 默认读取）
 auto_notify:
   min_score: 70
   min_wf: 55
-  interval_hours: 4
+  interval_hours: 1
   align_4h: true
