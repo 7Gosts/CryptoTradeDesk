@@ -4,8 +4,29 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone, tzinfo
 from zoneinfo import ZoneInfo
+
+
+def safe_tz(name: str = "Asia/Shanghai") -> tuple[tzinfo, str]:
+    """
+    安全获取时区对象。
+
+    - 正常环境：返回 ZoneInfo(name)
+    - 某些 Windows / Python 发行版缺少 IANA tzdata 时：ZoneInfo 会抛异常
+      - 对 Asia/Shanghai：退化为固定 UTC+8
+      - 对其它时区：退化为 UTC
+
+    返回：(tzinfo_obj, normalized_name)
+    """
+    raw = (name or "").strip() or "Asia/Shanghai"
+    # 特判：北京时间直接用固定 UTC+8，避免在缺 tzdata 的环境里触发 ZoneInfo 异常路径
+    if raw == "Asia/Shanghai":
+        return timezone(timedelta(hours=8)), "Asia/Shanghai"
+    try:
+        return ZoneInfo(raw), raw
+    except Exception:
+        return timezone.utc, "UTC"
 
 
 def parse_iso_utc(ts: str | None) -> datetime | None:
@@ -30,10 +51,7 @@ def fmt_local(dt: datetime | None, tz: str = "Asia/Shanghai", fmt: str = "%Y-%m-
         return "—"
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    try:
-        z = ZoneInfo(tz)
-    except Exception:
-        z = ZoneInfo("Asia/Shanghai")
+    z, _ = safe_tz(tz)
     return dt.astimezone(z).strftime(fmt)
 
 

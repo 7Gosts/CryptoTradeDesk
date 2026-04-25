@@ -13,7 +13,7 @@ alwaysApply: true
 - 始终使用简体中文回复。
 - 每次回答结束必须打印“本次回答使用的模型：<模型名>”。
 - 行情相关请求默认先执行：
-  - `python3 -m CryptoTradeDesk.gateio_kline_chart --market-brief --out-dir CryptoTradeDesk/output`（**默认不生成 PNG**，只写报告/简报/总览/台账供分析）
+ - `python3 gateio_kline_chart.py --market-brief --out-dir output`（**默认不生成 PNG**，只写报告/简报/总览/台账供分析）
   - 用户明确要「生成 k 线图 / 产生图片 / 出图」等：在同命令上加 **`--with-charts`**（或 `--chart-only` 仅图）
 - 读取产物顺序固定为：
   0) 先读取当前时间，并对照当日目录内 **`ai_brief.md` / `full_report.md`** 文末最近一次 **「追加记录」** 时间，说明与上次对话/简报间隔（同日多段时以末段为准或说明通读聚合文件）
@@ -21,7 +21,7 @@ alwaysApply: true
   2) `ai_overview.json`（**末次运行覆盖**，仅最新结构化快照）
   3) `full_report.md`（同上，追加块与 `ai_brief` 对齐阅读）
   4) 同目录 PNG（`<slug>_<interval>.png`，按 UTC 日期覆盖；**若本轮未生成 PNG** 则如实说明并跳过读图，仍以报告数字为准）
-- **对话解读写回 `ai_brief`（强制，仅加密场景）**：每次完成**加密行情类**完整回复（含逐币策略与跨品种总结等约定模块）后，须将**本次回复中的解读正文**追加到**本回合所依据**的 `CryptoTradeDesk/output/<日期>/ai_brief.md` 文件**末尾**。追加时用二级标题 **`## 对话解读附录（…）`**，并简短注明 UTC 时间、本机时间、免责（非脚本生成、不构成投资建议）；**不得**删改或覆盖该文件中脚本已生成的原有内容，仅追加。
+- **对话解读写回 `ai_brief`（强制，仅加密场景）**：每次完成**加密行情类**完整回复（含逐币策略与跨品种总结等约定模块）后，须将**本次回复中的解读正文**追加到**本回合所依据**的 `output/<日期>/ai_brief.md` 文件**末尾**。追加时用二级标题 **`## 对话解读附录（…）`**，并简短注明 UTC 时间、本机时间、免责（非脚本生成、不构成投资建议）；**不得**删改或覆盖该文件中脚本已生成的原有内容，仅追加。
 - 解释层除经典压力/支撑外，必须补充 Fib 参考：优先使用 `ai_overview` 的 `swing_anchor_high/low`、`fib_levels`、`price_vs_fib_zone`，禁止自行猜锚点。
 - 规则法 1-2-3：优先读各帧 **`method_123`** 与 **full_report**「规则化交易法（代码骨架）」；未检出则如实说；**禁止**自编点1/2/3；口述策略须可与 `break_level` / `state_vs_structure` 对读。
 - 输出顺序固定为：先逐币策略，再跨币种总结。
@@ -34,7 +34,7 @@ alwaysApply: true
 - **用户要「中级 / 波段」持仓尺度时（加密场景）**：`trade_journal.jsonl` 的 tactical/swing 仅为自动结构快照（含 `entry_price`、`order_kind_cn` 与 `trade_journal_readable.md`）；对话中入场与止损外沿须在 **更高周期 `fib_levels` + full_report 关注带** 上适度放宽，避免照搬过窄区间导致扫损；细则见 `CryptoTradeDesk/AI_行情对话提示.md`「中级 / 波段」条。
 - 弱信号场景必须补“交易心法提醒”：避免硬找机会、避免情绪化加仓与复仇交易，建议降频降仓并等待确认。
 - 若用户未提供昨日报告/截图，不做“与昨日对比”结论。
-- 合规口径固定引用：`CryptoTradeDesk/DISCLAIMER.md`。
+- 合规口径固定引用：`DISCLAIMER.md`。
 - 不要再输出 CSV 相关建议；当前脚本默认不生成 CSV。
 - 修改流程/规则后，优先更新 `CryptoTradeDesk/AI_行情对话提示.md`；
   `CryptoTradeDesk/AGENT_说明.md` 仅作速查入口。

@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 JOURNAL_DISPLAY_TZ_ENV = "CRYPTO_TRADEDESK_DISPLAY_TZ"
 
 
-from tools.time_utils import parse_iso_utc
+from tools.time_utils import parse_iso_utc, safe_tz
 
 
 def load_journal(path: Path) -> list[dict[str, Any]]:
@@ -162,10 +162,8 @@ def fmt_num(v: float | None) -> str:
 
 def _display_zone() -> tuple[ZoneInfo, str]:
     raw = (os.environ.get(JOURNAL_DISPLAY_TZ_ENV) or "").strip() or "Asia/Shanghai"
-    try:
-        return ZoneInfo(raw), raw
-    except Exception:
-        return ZoneInfo("Asia/Shanghai"), "Asia/Shanghai"
+    tz, name = safe_tz(raw)
+    return tz, name  # type: ignore[return-value]
 
 
 def _display_time_label() -> str:

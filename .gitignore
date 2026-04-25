@@ -17,6 +17,7 @@ build/
 .env
 .env.*
 config/*.local.yaml
+config/analysis_defaults.yaml
 
 # 编辑器与系统
 .DS_Store

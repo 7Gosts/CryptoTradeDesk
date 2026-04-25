@@ -10,13 +10,13 @@ from pathlib import Path
 from typing import Any
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
-_DEFAULT_CFG_PATH = _SCRIPT_DIR / "config" / "analysis_defaults.yaml"
+_DEFAULT_CFG_PATH = _SCRIPT_DIR / "config" / "analysis_defaults.example.yaml"
 
 
 def _load_analysis_config() -> dict[str, Any]:
     """
     加载分析参数配置（YAML）。
-    - 默认路径：CryptoTradeDesk/config/analysis_defaults.yaml
+    - 默认路径：config/analysis_defaults.example.yaml
     - 可用环境变量覆盖：CRYPTOTRADEDESK_ANALYSIS_CONFIG=/abs/path/to/yaml
     - 读取失败则返回空 dict（使用代码默认值）
     """
@@ -1619,7 +1619,7 @@ def format_ai_brief_md(
     lines.append(
         "**阅读说明**：本文件为**结构快照**（收盘、SMA21 偏离、结构标签、价上/价下关键位、Fib 标签）。"
         "**不含**脚本生成的入场/止损/止盈执行价；须在对话中结合 **ai_overview**（Fib 锚点与档位）与 **full_report** 关注带自行给出策略。"
-        " **须结合** **PNG**；合规 **`CryptoTradeDesk/DISCLAIMER.md`**。\n\n"
+        " **须结合** **PNG**；合规 **`DISCLAIMER.md`**。\n\n"
     )
     for pair_sym, asset, frames in items:
         lines.append(f"## {pair_sym}｜{asset}\n")
@@ -1655,6 +1655,6 @@ def format_ai_brief_md(
         lines.append("## 跨品种（4h 规则摘要）\n\n")
         lines.append(cross_section.strip() + "\n\n")
     lines.append(
-        "---\n*执行层策略（入场/止损/止盈）须在对话中给出；完整结构、关注带与路径预演见 full_report；Fib 锚点见 ai_overview；合规见 `CryptoTradeDesk/DISCLAIMER.md`。*\n"
+        "---\n*执行层策略（入场/止损/止盈）须在对话中给出；完整结构、关注带与路径预演见 full_report；Fib 锚点见 ai_overview；合规见 `DISCLAIMER.md`。*\n"
     )
     return "".join(lines)

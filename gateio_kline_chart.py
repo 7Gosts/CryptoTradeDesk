@@ -45,7 +45,7 @@ from kline_analysis import (
     inject_mtf_pivot_resonance,
 )
 
-from tools.time_utils import fmt_from_iso, fmt_local, parse_iso_utc
+from tools.time_utils import fmt_from_iso, fmt_local, parse_iso_utc, safe_tz
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 
@@ -270,13 +270,23 @@ def _write_or_append_daily_md(
     pairs_desc: str,
 ) -> None:
     new_body = new_body.rstrip() + "\n"
+    sep = _rollup_append_header(now_utc, mode_label, interval_label, pairs_desc)
     if path.is_file() and path.stat().st_size > 0:
         existing = path.read_text(encoding="utf-8")
-        sep = _rollup_append_header(now_utc, mode_label, interval_label, pairs_desc)
-        path.write_text(existing.rstrip() + sep + new_body, encoding="utf-8")
+        # 需求：同日聚合文件“新增块”写在文档顶端（便于直接看到最新快照），而不是末尾追加。
+        #
+        # 保留文件头部的“首次写入”注释（HTML comment），其余内容整体下移。
+        prefix_end = 0
+        if existing.lstrip().startswith("<!--"):
+            # 约定 _first_daily_md_prefix() 写入后紧跟一个空行（\n\n）
+            i = existing.find("\n\n")
+            prefix_end = (i + 2) if i >= 0 else 0
+        prefix = existing[:prefix_end]
+        rest = existing[prefix_end:].lstrip("\n")
+        path.write_text(prefix + sep + new_body + "\n" + rest, encoding="utf-8")
     else:
         prefix = _first_daily_md_prefix(session_date, now_utc)
-        path.write_text(prefix + new_body, encoding="utf-8")
+        path.write_text(prefix + sep + new_body, encoding="utf-8")
 
 
 def _prune_legacy_timestamped_reports(session_dir: Path) -> None:
@@ -312,10 +322,9 @@ def _env_flag_true(name: str) -> bool:
 def _journal_display_zone() -> tuple[ZoneInfo, str]:
     """人类可读时间默认 Asia/Shanghai；可用环境变量覆盖（IANA 名称）。"""
     raw = (os.environ.get(JOURNAL_DISPLAY_TZ_ENV) or "").strip() or "Asia/Shanghai"
-    try:
-        return ZoneInfo(raw), raw
-    except Exception:
-        return ZoneInfo("Asia/Shanghai"), "Asia/Shanghai"
+    tz, name = safe_tz(raw)
+    # 兼容：返回类型标注为 ZoneInfo，但在 Windows 缺 tzdata 时会退化为 fixed offset tzinfo
+    return tz, name  # type: ignore[return-value]
 
 
 def _journal_display_time_label() -> str:

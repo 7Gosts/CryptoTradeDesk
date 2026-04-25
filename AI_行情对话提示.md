@@ -10,7 +10,7 @@
 
 # AI 行情助手 — 可复制到任意 Cursor / ChatGPT 工作区
 
-把本文件 **连同整个 `CryptoTradeDesk/` 文件夹** 复制到你的项目里即可。用户只需**自然对话**，由 AI **自己执行命令**并**口头总结**。
+把本文件与项目脚本放在同一目录即可。用户只需**自然对话**，由 AI **自己执行命令**并**口头总结**。
 
 ---
 
@@ -31,7 +31,7 @@
    ```
 
    - **出图规则（与对话对齐）**：默认**不生成 PNG**。仅当用户在对话里**明确**要图（例如「生成 k 线图」「产生图片」「出图」「要 PNG」等）时，才把上述命令改为加 **`--with-charts`**（等价意图也可用环境变量 **`CRYPTO_TRADEDESK_RENDER_CHARTS=1`** 固定开启出图）。
-   - 输出落在 **`{KLINE_DIR}/output/<UTC日期>/`**（按日分子目录）。**`full_report.md`、`ai_brief.md`** 每个日历日各**一份**：多次运行时在文件**末尾追加**新快照，并以 **「追加记录 · UTC … · 北京时间 …」**（默认 `Asia/Shanghai`，可用环境变量 `CRYPTO_TRADEDESK_DISPLAY_TZ` 覆盖）标注添加时间与运行模式/周期/标的；**`ai_overview.json`** 为**末次运行覆盖**（仅保留最新结构化快照）。**默认不生成 PNG**（供 AI 读结构化报告即可）；需要 K 线图时在命令中加 **`--with-charts`**（PNG 文件名为 **`<slug>_<interval>.png`**，按 UTC 日期**覆盖**）。也可设环境变量 **`CRYPTO_TRADEDESK_RENDER_CHARTS=1`** 恢复「每次顺带出图」。免责见 **`CryptoTradeDesk/DISCLAIMER.md`**（不写入 `output/`）。
+   - 输出落在 **`{KLINE_DIR}/output/<UTC日期>/`**（按日分子目录）。**`full_report.md`、`ai_brief.md`** 每个日历日各**一份**：多次运行时在文件**末尾追加**新快照，并以 **「追加记录 · UTC … · 北京时间 …」**（默认 `Asia/Shanghai`，可用环境变量 `CRYPTO_TRADEDESK_DISPLAY_TZ` 覆盖）标注添加时间与运行模式/周期/标的；**`ai_overview.json`** 为**末次运行覆盖**（仅保留最新结构化快照）。**默认不生成 PNG**（供 AI 读结构化报告即可）；需要 K 线图时在命令中加 **`--with-charts`**（PNG 文件名为 **`<slug>_<interval>.png`**，按 UTC 日期**覆盖**）。也可设环境变量 **`CRYPTO_TRADEDESK_RENDER_CHARTS=1`** 恢复「每次顺带出图」。免责见 **`DISCLAIMER.md`**（不写入 `output/`）。
    - 交易对列表由 **`config/market_config.json`** 的 `default_pairs` 配置（可复制后自行增删）；可用 `--config` 指定别的 JSON。
    - 默认周期规则：若当日 `output/<日期>/` **首次创建**，本次输出 **1d + 4h** 与对应报告；若目录已存在，本次仅输出 **4h** 与对应报告。
    - `--interval` / `--limit` 仅在 **`--single-timeframe`** 时生效。
@@ -47,7 +47,7 @@
    3. **`ai_overview.json`**：读取 Fib 锚点、`method_123`、`signal_score`、`market_regime`、`walk_forward`、`signal_filter` 等结构化字段，作为执行解读锚点（**仅末次运行**，与 `ai_brief` 末段对齐为佳）。  
    4. **`full_report.md`** 或命令 **stdout**（与文件内容一致）：核对细节、关注带、**情景推演（价位阶梯、偏多/偏空路径的条件与结构失效参考）**。脚本**不写**执行止损/止盈/挂单价位。  
    5. **同目录 PNG（若存在）**：仅当本轮运行带了 **`--with-charts`**（或 `--chart-only`）时才生成；每个币种按本次周期检查形态与量能，只做对照，**不以读图替代报告数字**；若本轮未出图则**跳过本步**并说明。若冲突，优先以报告数字为准并说明可能原因（未收盘、缩放等）。  
-   6. **`CryptoTradeDesk/DISCLAIMER.md`**：回复中须体现合规边界（见第 5 节）。
+   6. **`DISCLAIMER.md`**：回复中须体现合规边界（见第 5 节）。
 
 3. **禁止**：编造未出现在报告/简报中的具体价格；禁止声称「脚本保证盈利」或「官方喊单」。
 
@@ -72,12 +72,12 @@
    - **建议下次复核时间（强制）**：在完成逐币策略与跨品种总结之后、合规话术之前，须根据本轮**交易策略**（主路径所用周期、触发是否依赖「收盘确认」、现价与 `break_level`/关注带/Fib 关口的距离、`signal_filter` 回避/观察、强/弱信号）单独给出 **1～3 句**可执行建议（可用小标题「**建议下次复核时间**」）。口径与 **第 1.2 节「复查时机规则」** 对齐，例如：默认 **下一根 4h K 线收盘后**再跑简报或再对话；现价贴近关键位（约 **0.3%～0.6%**）则建议 **15m 收盘级别**跟踪直至触发或失效；**回避/无明显方向**则明确 **降频**（如仅下一根 4h 或 UTC 日切后再跑 `--market-brief`）；用户要求 **波段/中级** 则以 **日线复核为主、4h 为辅** 写清间隔。若无法推算具体钟点，须说明原因并至少给出「以哪一根 K 收盘为准」。**追加写回 `ai_brief` 附录时**，本段建议须一并写入附录末，便于留档对照。
 
 5. **合规话术（文末固定）**  
-   须包含：数据来自 **Gate.io 公共 K 线**；文中价位与策略为 **技术情景推演**；**不构成投资建议**；详见 **`CryptoTradeDesk/DISCLAIMER.md`**。
+   须包含：数据来自 **Gate.io 公共 K 线**；文中价位与策略为 **技术情景推演**；**不构成投资建议**；详见 **`DISCLAIMER.md`**。
 
 6. **对话解读写回 `ai_brief`（强制）**  
    每次完成**行情类**完整回复（含本节第 4 点约定的逐币与跨品种等模块）后，须将**本次回复中的解读正文**追加写入 **本回合所读取/生成的** `output/<日期>/ai_brief.md` 文件**末尾**（与同目录 **`full_report.md` 末段「追加记录」时间** 对齐说明更佳）。追加格式建议：  
    - 分隔线 `---` 后新增 **`## 对话解读附录（Cursor / 模型名｜UTC …）`**；  
-   - 文首用一行说明：附录为对话模型根据同目录 **ai_overview**、**full_report** 与简报的综合解读，**非**脚本生成；策略为讨论推演，详见 **`CryptoTradeDesk/DISCLAIMER.md`**；  
+   - 文首用一行说明：附录为对话模型根据同目录 **ai_overview**、**full_report** 与简报的综合解读，**非**脚本生成；策略为讨论推演，详见 **`DISCLAIMER.md`**；  
    - 附录**末尾**宜包含与正文一致的 **「建议下次复核时间」**（与第 4 点强制项一致）；  
    - **禁止**修改、删除脚本已写入的 `ai_brief` 原有内容，**仅追加**；多次提问则多次追加（可按时间分节），便于留档与对照。
 
@@ -86,7 +86,7 @@
    - **跨品种关联**：默认 **4h** 统计规则段；全文日线上下文在 **full_report** 各币「日线（1d）」下。  
    - **输出物**：图给人看趋势；**ai_brief / ai_overview 给模型快读**；**full_report 给人核对数字**。
 
-**若命令失败**（网络、缺包）：说明原因；若缺 `mplfinance` 等，执行 `pip install -r CryptoTradeDesk/requirements.txt`。
+**若命令失败**（网络、缺包）：说明原因；若缺 `mplfinance` 等，执行 `pip install -r requirements.txt`。
 
 ---
 
@@ -167,7 +167,7 @@
 
 ## 2. 给用户看的「一句话用法」（可转发）
 
-> 把 `CryptoTradeDesk` 放进项目，@ `AI_行情对话提示.md` 或说「按 AI_行情对话提示 做今日行情」；Agent 会跑 `--market-brief`（默认**不出图**），读 `output/<日期>/` 下的 **ai_brief、ai_overview、full_report**（有 PNG 再对照），免责见 **`CryptoTradeDesk/DISCLAIMER.md`**。
+> 在仓库根目录运行脚本，@ `AI_行情对话提示.md` 或说「按 AI_行情对话提示 做今日行情」；Agent 会跑 `--market-brief`（默认**不出图**），读 `output/<日期>/` 下的 **ai_brief、ai_overview、full_report**（有 PNG 再对照），免责见 **`DISCLAIMER.md`**。
 
 ---
 
@@ -175,25 +175,25 @@
 
 ```bash
 # 多币简报（配置见 config/market_config.json；默认不出图）
-python3 CryptoTradeDesk/gateio_kline_chart.py --market-brief --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --market-brief --out-dir output
 
 # 多币简报 + 生成 K 线 PNG
-python3 CryptoTradeDesk/gateio_kline_chart.py --market-brief --with-charts --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --market-brief --with-charts --out-dir output
 
 # 单币（按日期目录自动切换 1d / 4h；默认不出图）
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --out-dir output
 
 # 单币 + 出图
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --with-charts --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --with-charts --out-dir output
 
 # 仅图
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --chart-only --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --chart-only --out-dir output
 
 # 仅报告（与默认等价：不出图）
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --report-only --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --report-only --out-dir output
 
 # 只要单周期 4h
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --single-timeframe --interval 4h --limit 120 --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --single-timeframe --interval 4h --limit 120 --out-dir output
 ```
 
 ---

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-每 4 小时跑一次 4h 简报；若出现“强信号”，就把可执行策略推送到飞书私聊（open_id）。
+每隔一段时间跑一次简报（默认 1 小时），同时生成 4h 与 1h 两个周期的结构快照；
+若出现“强信号”，就把可执行策略推送到飞书私聊（open_id）。
 
 判定“强信号”（默认，可通过参数调整）：
-  - 4h signal_filter.decision_cn == "可执行"
+  - 4h 或 1h 的 signal_filter.decision_cn == "可执行"
   - 且 signal_score.total >= --min-score（默认 70）
   - 且 walk_forward.score >= --min-wf（默认 55）
 
 推送内容：
-  - CryptoTradeDesk/output/trade_journal_readable.md 的全文（超长自动截断）
+  - output/trade_journal_readable.md 的全文（超长自动截断）
   - + 触发币种列表 + ai_overview generated_at_utc
 """
 
@@ -25,6 +26,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.ai_overview import load_ai_overview, merge_ai_overview, write_ai_overview
 from tools.config import cfg_get, cfg_str, load_yaml
 from tools.feishu_sender import get_tenant_access_token, load_credential, send_text
 from tools.time_utils import fmt_from_iso
@@ -33,6 +35,7 @@ from tools.time_utils import fmt_from_iso
 @dataclass(frozen=True)
 class SignalHit:
     pair: str
+    interval: str
     score: int | None
     wf: int | None
     decision_cn: str | None
@@ -61,17 +64,20 @@ def _ceil_to_next_4h_boundary(dt: datetime) -> datetime:
     return base.replace(hour=next_hour)
 
 
-def _run_market_brief(out_dir: Path) -> None:
-    cmd = [
-        sys.executable,
-        str((Path(__file__).resolve().parent / "gateio_kline_chart.py").resolve()),
-        "--market-brief",
-        "--out-dir",
-        str(out_dir),
-    ]
+def _run_market_brief(out_dir: Path, *, interval: str | None = None, limit: int = 120) -> None:
+    """
+    运行 gateio_kline_chart.py。
+    - interval is None: 使用脚本的“按日期目录自动多周期”逻辑（通常含 4h；新建目录还会含 1d）
+    - interval provided: 强制单周期（用于补跑 1h）
+    """
+    cmd = [sys.executable, str((Path(__file__).resolve().parent / "gateio_kline_chart.py").resolve()), "--market-brief"]
+    if interval:
+        cmd += ["--single-timeframe", "--interval", str(interval), "--limit", str(int(limit))]
+    cmd += ["--out-dir", str(out_dir)]
     p = subprocess.run(cmd, capture_output=True, text=True)
     if p.returncode != 0:
-        raise RuntimeError(f"market-brief 失败（code={p.returncode}）: {p.stderr.strip()}")
+        stderr = (p.stderr or "").strip()
+        raise RuntimeError(f"market-brief 失败（code={p.returncode}）: {stderr}")
 
 
 def _today_session_dir(out_dir: Path, now_utc: datetime) -> Path:
@@ -79,8 +85,15 @@ def _today_session_dir(out_dir: Path, now_utc: datetime) -> Path:
 
 
 def _load_ai_overview(session_dir: Path) -> dict[str, Any]:
-    p = session_dir / "ai_overview.json"
-    return json.loads(p.read_text(encoding="utf-8"))
+    return load_ai_overview(session_dir)
+
+
+def _write_ai_overview(session_dir: Path, overview: dict[str, Any]) -> None:
+    write_ai_overview(session_dir, overview)
+
+
+def _merge_ai_overview(primary: dict[str, Any], secondary: dict[str, Any]) -> dict[str, Any]:
+    return merge_ai_overview(primary, secondary)
 
 
 def _load_yaml_config(path: Path) -> dict[str, Any]:
@@ -106,7 +119,7 @@ def _cfg_str(d: dict[str, Any], *key_paths: str, default: str = "") -> str:
 
 
 def _pick_strong_hits(
-    overview: dict[str, Any], *, min_score: int, min_wf: int, interval: str = "4h"
+    overview: dict[str, Any], *, min_score: int, min_wf: int, interval: str
 ) -> list[SignalHit]:
     hits: list[SignalHit] = []
     for a in overview.get("assets") or []:
@@ -133,7 +146,7 @@ def _pick_strong_hits(
             continue
         if score_i < min_score or wf_i < min_wf:
             continue
-        hits.append(SignalHit(pair=pair, score=score_i, wf=wf_i, decision_cn=decision_cn))
+        hits.append(SignalHit(pair=pair, interval=interval, score=score_i, wf=wf_i, decision_cn=decision_cn))
     return hits
 
 
@@ -295,9 +308,9 @@ def _format_order_message(e: dict[str, Any]) -> str:
 def _build_message(overview: dict[str, Any], hits: list[SignalHit], journal_md: str) -> str:
     gen = str(overview.get("generated_at_utc") or "—")
     header = [
-        f"[CryptoTradeDesk] 触发强信号（4h）",
+        f"[CryptoTradeDesk] 触发强信号（4h/1h）",
         f"- generated_at_utc: {gen}",
-        "- hits: " + ", ".join(f"{h.pair}(score={h.score},wf={h.wf})" for h in hits),
+        "- hits: " + ", ".join(f"{h.pair}/{h.interval}(score={h.score},wf={h.wf})" for h in hits),
         "",
         "=== trade_journal_readable.md ===",
         "",
@@ -327,7 +340,7 @@ def main() -> int:
     ap.add_argument("--out-dir", default=str(Path(__file__).resolve().parent / "output"))
     ap.add_argument(
         "--config",
-        default=str(Path(__file__).resolve().parent / "config" / "analysis_defaults.yaml"),
+        default=str(Path(__file__).resolve().parent / "config" / "analysis_defaults.example.yaml"),
         help="默认配置 YAML（用于读取飞书凭据/open_id/阈值）",
     )
     ap.add_argument("--min-score", type=int, default=0, help="强信号最小 score（0=用 YAML 默认）")
@@ -354,7 +367,7 @@ def main() -> int:
     min_score = int(args.min_score) if int(args.min_score) > 0 else int(_cfg_get(cfg, "auto_notify.min_score", 70))
     min_wf = int(args.min_wf) if int(args.min_wf) > 0 else int(_cfg_get(cfg, "auto_notify.min_wf", 55))
     interval_hours = (
-        int(args.interval_hours) if int(args.interval_hours) > 0 else int(_cfg_get(cfg, "auto_notify.interval_hours", 4))
+        int(args.interval_hours) if int(args.interval_hours) > 0 else int(_cfg_get(cfg, "auto_notify.interval_hours", 1))
     )
     align_4h_default = bool(_cfg_get(cfg, "auto_notify.align_4h", False))
     align_4h = bool(args.align_4h) or align_4h_default
@@ -370,12 +383,22 @@ def main() -> int:
         now = _utc_now()
         # 运行前记录台账快照，用于判定“本轮新增/更新”
         journal_before = _parse_journal_jsonl(_journal_file(out_dir))
-        _run_market_brief(out_dir)
+        # 先跑“自动多周期”（通常含 4h；新建目录还会含 1d），再补跑 1h。
+        # 因为 ai_overview.json 每次运行会覆盖写入，所以需要把两次的 overview 合并后再写回。
+        _run_market_brief(out_dir, interval=None)
         journal_after = _parse_journal_jsonl(_journal_file(out_dir))
         delta = _diff_journal(journal_before, journal_after)
         session_dir = _today_session_dir(out_dir, now)
-        overview = _load_ai_overview(session_dir)
-        hits = _pick_strong_hits(overview, min_score=min_score, min_wf=min_wf)
+        overview_4h = _load_ai_overview(session_dir)
+
+        _run_market_brief(out_dir, interval="1h", limit=120)
+        overview_1h = _load_ai_overview(session_dir)
+        overview = _merge_ai_overview(overview_4h, overview_1h)
+        _write_ai_overview(session_dir, overview)
+
+        hits: list[SignalHit] = []
+        hits.extend(_pick_strong_hits(overview, min_score=min_score, min_wf=min_wf, interval="4h"))
+        hits.extend(_pick_strong_hits(overview, min_score=min_score, min_wf=min_wf, interval="1h"))
         if hits or args.test_send:
             hit_pairs = {h.pair for h in hits} if hits else set()
             # 本轮新增/更新的策略单

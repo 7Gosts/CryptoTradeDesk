@@ -9,22 +9,22 @@
 
 ```bash
 # 多币（按 config/market_config.json；默认不出图）
-python3 CryptoTradeDesk/gateio_kline_chart.py --market-brief --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --market-brief --out-dir output
 
 # 多币 + 生成 K 线 PNG
-python3 CryptoTradeDesk/gateio_kline_chart.py --market-brief --with-charts --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --market-brief --with-charts --out-dir output
 
 # 单币（按日期目录自动：首次创建目录跑 1d+4h，之后跑 4h；默认不出图）
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --out-dir output
 
 # 单币 + 出图
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --with-charts --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --with-charts --out-dir output
 
 # 仅出图（不写 full_report / ai_brief / ai_overview）
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --chart-only --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --chart-only --out-dir output
 
 # 仅出报告（与默认等价：不生成 PNG）
-python3 CryptoTradeDesk/gateio_kline_chart.py --pair ETH_USDT --report-only --out-dir CryptoTradeDesk/output
+python3 gateio_kline_chart.py --pair ETH_USDT --report-only --out-dir output
 ```
 
 ---

@@ -90,7 +90,7 @@
 
 为避免“只靠对话记忆”的漂移，项目已加入**代码化台账**：
 
-- 文件：`CryptoTradeDesk/output/trade_journal.jsonl`
+- 文件：`output/trade_journal.jsonl`
 - 写入时机：每次运行 `--market-brief` 或单币报告模式且存在有效统计时
 - 记录门槛：仅高质量候选（`signal_filter=executable`，或高分 `observe`）
 - 自动更新：
@@ -114,7 +114,7 @@
 如需手动查看统计，可运行：
 
 ```bash
-python3 CryptoTradeDesk/trade_journal_stats.py
+python3 trade_journal_stats.py
 ```
 
 ---
