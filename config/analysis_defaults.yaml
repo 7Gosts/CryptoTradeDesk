@@ -1,0 +1,37 @@
+# CryptoTradeDesk 分析默认参数（可按需调整）
+#
+# 说明：
+# - 脚本启动时会尝试读取本文件；读取失败则回退到代码内默认值。
+# - 这里只放“相对稳定的策略/统计阈值”，避免把业务逻辑写死在代码里。
+#
+# 台账写入门槛（reward/risk）
+min_journal_rr: 1.2
+
+# 均线与窗口（需与图表 mav 口径一致）
+ma_short: 8
+ma_mid: 21
+ma_long: 55
+
+# 分形/结构参数
+pivot_left: 2
+pivot_right: 2
+pivot_long_lookback_bars: 400
+pivot_merge_rel: 0.001
+pivot_touch_rel: 0.001
+pivot_mtf_match_rel: 0.004
+
+# 1-2-3 规则集
+method_123_ruleset_id: ross_123_reversal_fractal_v1
+
+# 飞书推送（可选）：勿在此文件写明文密钥；优先用环境变量
+#   FEISHU_APP_ID / FEISHU_APP_SECRET / FEISHU_OPEN_ID
+# 或运行时参数：--app-id / --app-secret / --open-id（见 auto_4h_notify.py）
+# 若必须用 YAML：可复制本文件为 config/analysis_defaults.local.yaml（*.local.yaml 已 gitignore），
+# 在副本中填写 feishu 嵌套键或顶层 FEISHU_*，并用 --config 指向该副本。
+
+# 自动通知的“强信号”阈值（可选；供 auto_4h_notify.py 默认读取）
+auto_notify:
+  min_score: 70
+  min_wf: 55
+  interval_hours: 4
+  align_4h: true

@@ -1,0 +1,11 @@
+{
+  "default_pairs": [
+    "BTC_USDT",
+    "SOL_USDT",
+    "ETH_USDT",
+    "XAUT_USDT"
+  ],
+  "asset_titles": {
+    "PAXG_USDT": "PAXG（黄金代币）"
+  }
+}

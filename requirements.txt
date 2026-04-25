@@ -1,0 +1,7 @@
+# Gate.io K 线出图 + 分析（gateio_kline_chart.py）
+#   pip install -r CryptoTradeDesk/requirements.txt
+pandas>=2.0.0
+matplotlib>=3.7.0
+mplfinance>=0.12.0
+PyYAML>=6.0.0
+requests>=2.31.0
