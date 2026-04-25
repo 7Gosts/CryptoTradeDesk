@@ -25,9 +25,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-from CryptoTradeDesk.tools.feishu_sender import get_tenant_access_token, load_credential, send_text
-from CryptoTradeDesk.tools.config import cfg_get, cfg_str, load_yaml
-from CryptoTradeDesk.tools.time_utils import fmt_from_iso
+from tools.config import cfg_get, cfg_str, load_yaml
+from tools.feishu_sender import get_tenant_access_token, load_credential, send_text
+from tools.time_utils import fmt_from_iso
 
 
 @dataclass(frozen=True)

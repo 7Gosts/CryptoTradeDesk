@@ -22,7 +22,7 @@ def _load_analysis_config() -> dict[str, Any]:
     """
     cfg_path = os.getenv("CRYPTOTRADEDESK_ANALYSIS_CONFIG", "").strip()
     path = Path(cfg_path).expanduser().resolve() if cfg_path else _DEFAULT_CFG_PATH
-    from CryptoTradeDesk.tools.config import load_yaml
+    from tools.config import load_yaml
 
     return load_yaml(path)
 

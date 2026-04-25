@@ -3,8 +3,8 @@
 交易台账统计脚本（周/月）。
 
 示例:
-  python3 CryptoTradeDesk/trade_journal_stats.py
-  python3 CryptoTradeDesk/trade_journal_stats.py --journal CryptoTradeDesk/output/trade_journal.jsonl --json
+  python3 trade_journal_stats.py
+  python3 trade_journal_stats.py --journal output/trade_journal.jsonl --json
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 JOURNAL_DISPLAY_TZ_ENV = "CRYPTO_TRADEDESK_DISPLAY_TZ"
 
 
-from CryptoTradeDesk.tools.time_utils import parse_iso_utc
+from tools.time_utils import parse_iso_utc
 
 
 def load_journal(path: Path) -> list[dict[str, Any]]:
@@ -210,7 +210,7 @@ def main() -> int:
     p = argparse.ArgumentParser(description="交易台账周/月统计")
     p.add_argument(
         "--journal",
-        default="CryptoTradeDesk/output/trade_journal.jsonl",
+        default="output/trade_journal.jsonl",
         help="台账文件路径",
     )
     p.add_argument("--json", action="store_true", help="输出 JSON")
