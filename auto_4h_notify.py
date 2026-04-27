@@ -340,7 +340,7 @@ def main() -> int:
     ap.add_argument("--out-dir", default=str(Path(__file__).resolve().parent / "output"))
     ap.add_argument(
         "--config",
-        default=str(Path(__file__).resolve().parent / "config" / "analysis_defaults.example.yaml"),
+        default=str(Path(__file__).resolve().parent / "config" / "analysis_defaults.yaml"),
         help="默认配置 YAML（用于读取飞书凭据/open_id/阈值）",
     )
     ap.add_argument("--min-score", type=int, default=0, help="强信号最小 score（0=用 YAML 默认）")
