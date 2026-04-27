@@ -9,9 +9,9 @@
   - 且 signal_score.total >= --min-score（默认 70）
   - 且 walk_forward.score >= --min-wf（默认 55）
 
-推送内容：
-  - output/trade_journal_readable.md 的全文（超长自动截断）
-  - + 触发币种列表 + ai_overview generated_at_utc
+推送内容（当前实现）：
+  - 仅推送“本轮新增/更新”里筛选出的单条最佳策略单摘要
+  - test-send 模式下若本轮无差量，会从全量台账回退挑一条用于链路验证
 """
 
 from __future__ import annotations
@@ -51,6 +51,18 @@ class JournalDelta:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _fmt_utc(dt: datetime) -> str:
+    return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+def _fmt_local(dt: datetime) -> str:
+    return dt.astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+def _log(msg: str) -> None:
+    print(f"[auto_4h_notify] {msg}", flush=True)
 
 
 def _ceil_to_next_4h_boundary(dt: datetime) -> datetime:
@@ -372,12 +384,23 @@ def main() -> int:
     align_4h_default = bool(_cfg_get(cfg, "auto_notify.align_4h", False))
     align_4h = bool(args.align_4h) or align_4h_default
 
+    _log(
+        "启动："
+        f"min_score={min_score}, min_wf={min_wf}, interval_hours={interval_hours}, "
+        f"align_4h={align_4h}, once={args.once}, test_send={args.test_send}"
+    )
+
     while True:
         now = _utc_now()
+        _log(f"开始新一轮：now_utc={_fmt_utc(now)} | now_local={_fmt_local(now)}")
         if align_4h and not args.once:
             nxt = _ceil_to_next_4h_boundary(now)
             sleep_s = max(0.0, (nxt - now).total_seconds())
             if sleep_s > 1:
+                _log(
+                    f"对齐 4h 边界：next_utc={_fmt_utc(nxt)} | next_local={_fmt_local(nxt)} | "
+                    f"sleep={int(sleep_s)}s"
+                )
                 time.sleep(sleep_s)
 
         now = _utc_now()
@@ -399,6 +422,13 @@ def main() -> int:
         hits: list[SignalHit] = []
         hits.extend(_pick_strong_hits(overview, min_score=min_score, min_wf=min_wf, interval="4h"))
         hits.extend(_pick_strong_hits(overview, min_score=min_score, min_wf=min_wf, interval="1h"))
+        hit_details = (
+            ", ".join(f"{h.pair}/{h.interval}(score={h.score},wf={h.wf})" for h in hits) if hits else "none"
+        )
+        _log(
+            f"本轮结果：hits={len(hits)}, journal_added={len(delta.added_ids)}, "
+            f"journal_updated={len(delta.updated_ids)}, hit_list={hit_details}"
+        )
         if hits or args.test_send:
             hit_pairs = {h.pair for h in hits} if hits else set()
             # 本轮新增/更新的策略单
@@ -422,9 +452,17 @@ def main() -> int:
                 msg = _format_order_message(best)
 
             if not msg.strip():
+                _log("本轮无可推送策略单：不发送飞书消息。")
                 if args.once:
+                    _log("单次模式结束。")
                     return 0
-                time.sleep(max(60, int(interval_hours * 3600)))
+                sleep_secs = max(60, int(interval_hours * 3600))
+                next_run = _utc_now() + timedelta(seconds=sleep_secs)
+                _log(
+                    f"执行完成，等待下次运行：sleep={sleep_secs}s | "
+                    f"next_utc={_fmt_utc(next_run)} | next_local={_fmt_local(next_run)}"
+                )
+                time.sleep(sleep_secs)
                 continue
 
             resp = _send(
@@ -435,11 +473,23 @@ def main() -> int:
             )
             if not _ok_resp(resp):
                 raise RuntimeError(f"飞书发送失败: {resp}")
+            best_pair = str(best.get("pair") or "—") if best is not None else "—"
+            best_interval = str(best.get("interval") or "—") if best is not None else "—"
+            _log(f"飞书发送成功：pair={best_pair}, interval={best_interval}, hits={len(hits)}")
+        else:
+            _log("本轮未命中强信号且未开启 test-send：不发送飞书消息。")
 
         if args.once:
+            _log("单次模式结束。")
             return 0
 
-        time.sleep(max(60, int(interval_hours * 3600)))
+        sleep_secs = max(60, int(interval_hours * 3600))
+        next_run = _utc_now() + timedelta(seconds=sleep_secs)
+        _log(
+            f"执行完成，等待下次运行：sleep={sleep_secs}s | "
+            f"next_utc={_fmt_utc(next_run)} | next_local={_fmt_local(next_run)}"
+        )
+        time.sleep(sleep_secs)
 
 
 if __name__ == "__main__":
